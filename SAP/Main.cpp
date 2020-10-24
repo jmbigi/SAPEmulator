@@ -2,6 +2,8 @@
 #include <fstream>
 #include "Opcode.h"
 
+#define TESTING 1
+
 #define UPDATE_FLAGS(state) \
     (state).sign = (int8_t)(state).a < 0; \
     (state).zero = (state).a == 0
@@ -80,7 +82,7 @@ public:
             // fetch
             currentInstruction.instr = *((uint32_t*)(state.memory + state.pc));
 
-            // decode
+            // decode & execute
             switch (currentInstruction.opcode) {
                 case SAPOpcode::ADD_B:
                     state.a += state.b;
@@ -326,6 +328,16 @@ private:
     }
 };
 
+/*
+    SEX - (S)AP (Ex)ecutable
+    a simple executable file format for SAP Emulator
+
+    Structure:
+    0       -> file signature/FOURCC (SEXP = 0x50584553)
+    4       -> code size
+    6       -> initial program counter address (PC)
+    8-end   -> the code
+*/
 void loadFile(const std::string& str, SAPVCPU& vcpu)
 {
     std::ifstream file(str, std::ios::binary | std::ios::in);
@@ -340,7 +352,7 @@ void loadFile(const std::string& str, SAPVCPU& vcpu)
 
     file.read((char*)&fourcc, 4);
 
-    if (fourcc != 0x43504153) {
+    if (fourcc != 0x50584553) {
         throw std::runtime_error("File not compatible");
     }
 
@@ -357,26 +369,31 @@ void loadFile(const std::string& str, SAPVCPU& vcpu)
 
 // testing some of the instruction to make sure it work properly
 uint8_t program[] = {
-    0x3E, 9,
-    0x90,
-    0xD3, 3,
-    0xC9,
-    0x3E, 4,
-    0x06, 2,
-    0xD3, 3,
-    0xCD, 0x00, 0x00,
-    0x76
+    0x3E, 9,            // MVI A, 0x09
+    0x90,               // ADD B
+    0xD3, 3,            // OUT 3
+    0xC9,               // RET
+    0x3E, 4,            // MVI A, 0x04
+    0x06, 2,            // MVI B, 0x02
+    0xD3, 3,            // OUT 3
+    0xCD, 0x00, 0x00,   // CALL 0x0000
+    0x76                // HLT
 };
 
 int main(int argc, char** argv)
 {
     SAPVCPU vcpu;
 
+#ifndef TESTING
     if (argc < 2) {
         throw std::runtime_error("No input file");
     }
 
     loadFile(argv[1], vcpu);
+#else
+    vcpu.loadProgram(program, sizeof(program));
+    vcpu.setPC(6);
+#endif
     vcpu.run();
 
     return 0;
