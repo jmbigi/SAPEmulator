@@ -329,11 +329,11 @@ private:
 };
 
 /*
-    SEX - (S)AP (Ex)ecutable
+    SPX - SAP Executable
     a simple executable file format for SAP Emulator
 
     Structure:
-    0       -> file signature/FOURCC (SEXP = 0x50584553)
+    0       -> file signature/FOURCC (SEXP = 0x43585053)
     4       -> code size
     6       -> initial program counter address (PC)
     8-end   -> the code
@@ -352,7 +352,7 @@ void loadFile(const std::string& str, SAPVCPU& vcpu)
 
     file.read((char*)&fourcc, 4);
 
-    if (fourcc != 0x50584553) {
+    if (fourcc != 0x43585053) {
         throw std::runtime_error("File not compatible");
     }
 
